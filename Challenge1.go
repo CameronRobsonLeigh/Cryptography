@@ -5,6 +5,7 @@ import (
     "encoding/base64"
     "fmt"
     "log"
+    "errors"
 )
 
 // hexadecimal string -> each byte represented as 2 characters
@@ -17,10 +18,41 @@ func convertHexToBase64(hexStr string) (string, error) {
         return "", err
     }
 
-    // Encode the byte slice into Base64
+    // Encode the byte slice into Base64    
     base64Str := base64.StdEncoding.EncodeToString(bytes)
     
     return base64Str, nil
+}
+
+func fixedXor(bufferOne string, bufferTwo string) (string, error) {
+    // Decode first string into bytes
+    bytesOne, err := hex.DecodeString(bufferOne)
+    if err != nil {
+        return "", err
+    }
+    // Same with second string
+    bytesTwo, err := hex.DecodeString(bufferTwo)
+    if err != nil {
+        return "", err
+    }
+
+    // length check, requirement is of them to be equal length
+    // e.g. matching a key and plaintext
+    if len(bytesOne) != len(bytesTwo) {
+        return "", errors.New("buffers must be of equal length")
+    }
+
+    // create empty byte array of length of bytes one (we know will be equal)
+    // more efficient that declaration using Go make function as it pre-allocates the memory.
+    xorResult := make([]byte, len(bytesOne))
+    for i := 0; i < len(bytesOne); i++ {
+        // xor operation on both hex strings 
+        xorResult[i] = bytesOne[i] ^ bytesTwo[i]
+    }
+
+    // finally, encode xor result to string (not base 64)
+    return hex.EncodeToString(xorResult), nil
+
 }
 
 func main() {  
@@ -28,6 +60,13 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
-
     fmt.Println("Base64:", base64Str)
+
+    str, err := fixedXor("1c0111001f010100061a024b53535009181c", "686974207468652062756c6c277320657965");
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("XOR:", str)
+
+
 }
